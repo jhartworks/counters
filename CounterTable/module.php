@@ -44,8 +44,13 @@ class CounterTable extends IPSModule {
 
                 $cost = 0.0;
                 $cost = $cnt->Monthly * $price;
+                $style ='';
+                if ($cnt->Monthly > $cnt->Limit){
+                    $style = 'style="background-color:yellow;"';
+                }
+                
                 $dataoutput .= '        
-                <tr style="background-color:white;">
+                <tr '.$style.'>
                 
                     <td style="text-align:left;">
                             '.$cnt->Name.'
