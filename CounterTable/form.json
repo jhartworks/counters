@@ -16,13 +16,13 @@
             {
                 "caption": "Name",
                 "name": "Name",
-                "width": "auto",
+                "width": "100px",
                 "add": ""
             }, 
             {
                 "caption": "Gesamtverbrauch",
                 "name": "Total",
-                "width": "auto",
+                "width": "100px",
                 "edit": {
                     "type": "SelectVariable",
                     "validVariableTypes": [2]
@@ -32,7 +32,7 @@
             {
                 "caption": "Monatsverbrauch",
                 "name": "Monthly",
-                "width": "auto",
+                "width": "100px",
                 "edit": {
                     "type": "SelectVariable",
                     "validVariableTypes": [2]
@@ -42,7 +42,7 @@
             {
                 "caption": "Wochenverbrauch",
                 "name": "Weekly",
-                "width": "auto",
+                "width": "100px",
                 "edit": {
                     "type": "SelectVariable",
                     "validVariableTypes": [2]
@@ -52,7 +52,7 @@
             {
                 "caption": "Tagesverbrauch",
                 "name": "Daily",
-                "width": "auto",
+                "width": "100px",
                 "edit": {
                     "type": "SelectVariable",
                     "validVariableTypes": [2]
@@ -62,7 +62,7 @@
             {
                 "caption": "Limit",
                 "name": "Limit",
-                "width": "auto",
+                "width": "100px",
                 "edit": {
                     "type": "NumberSpinner",
                     "digits": 2
