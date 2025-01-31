@@ -12,15 +12,7 @@
                 "column": "Name",
                 "direction": "ascending"
             },
-            "columns": [{
-                "caption": "InstanceID",
-                "name": "InstanceID", 
-                "width": "75px",
-                "add": 0,
-                "edit": {
-                    "type": "SelectInstance"
-                }
-            }, 
+            "columns": [
             {
                 "caption": "Name",
                 "name": "Name",
@@ -30,47 +22,47 @@
             {
                 "caption": "Gesamtverbrauch",
                 "name": "Total",
-                "width": "40px",
+                "width": "auto",
                 "edit": {
                     "type": "SelectVariable",
-                    "validVariableTypes": [7]
+                    "validVariableTypes": [2]
                 },
                 "add": 0
             }, 
             {
                 "caption": "Monatsverbrauch",
                 "name": "Monthly",
-                "width": "75px",
+                "width": "auto",
                 "edit": {
                     "type": "SelectVariable",
-                    "validVariableTypes": [7]
+                    "validVariableTypes": [2]
                 },
                 "add": 0
             },
             {
                 "caption": "Wochenverbrauch",
                 "name": "Weekly",
-                "width": "75px",
+                "width": "auto",
                 "edit": {
                     "type": "SelectVariable",
-                    "validVariableTypes": [7]
+                    "validVariableTypes": [2]
                 },
                 "add": 0
             },
             {
                 "caption": "Tagesverbrauch",
                 "name": "Daily",
-                "width": "75px",
+                "width": "auto",
                 "edit": {
                     "type": "SelectVariable",
-                    "validVariableTypes": [7]
+                    "validVariableTypes": [2]
                 },
                 "add": 0
             },
             {
                 "caption": "Limit",
                 "name": "Limit",
-                "width": "75px",
+                "width": "auto",
                 "edit": {
                     "type": "NumberSpinner",
                     "digits": 2
