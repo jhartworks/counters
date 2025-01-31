@@ -29,42 +29,69 @@ class CounterTable extends IPSModule {
 
 
     public function checkTable(){
-        $Idvalue = $this->ReadPropertyFloat("Price");
+        $price = $this->ReadPropertyFloat("Price");
 
 
         $arrString = $this->ReadPropertyString("Counters");
         $arr = json_decode($arrString);
+        
 
-        print_r($arr);
+        $dataoutput = "";
+       /// print_r($arr);
+
+        foreach($arr as $cnt){
+
+            $cost = 0.0;
+            $cost = $cnt->Monthly * $price;
+            $dataoutput .= '        
+            <tr style="background-color:white;">
+            
+                <td style="text-align:left;">
+                        '.$cnt->Name.'
+                </td>
+                
+                <td>
+                        '.$cnt->Total.' kWh
+                </td>
+                
+                <td>
+                        '.$cnt->Monthly.' kWh
+                </td>
+                        
+                <td>
+                        '.$cnt->Weekly.' kWh
+                </td>
+                
+                <td>
+                        '.$cnt->Daily.' kWh
+                </td>
+                
+                <td>
+                        '.$cost.'€
+                </td>
+
+                </tr>';
+
+        }
+
+        $this->createTable($dataoutput);
 
 /* 
-        '<tr style="background-color:'.$ColorGrenzeGesamt.';">
-            
-        <td style="text-align:left;">
-                Gesamt
-        </td>
-        
-        <td>
-                '.$ZaehlerGesamtGesamt.'
-        </td>
-        
-        <td>
-                '.$ZaehlerGesamtMonat.'
-        </td>
-                
-        <td>
-                '.$GrenzeZaehlerGesamt.' kWh
-        </td>
-        
-        <td>
-                '.$ZaehlerGesamtTag.'
-        </td>
-        
-        <td>
-                '.$KostenGesamt.'€
-        </td>
 
-        </tr>'
+                        Array
+                (
+                    [0] => stdClass Object
+                        (
+                            [Name] => Blub
+                            [Total] => 49294
+                            [Monthly] => 49294
+                            [Weekly] => 49294
+                            [Daily] => 49294
+                            [Limit] => 0.1
+                        )
+
+                )
+                (Code: -32603)
  */
 
 
@@ -107,6 +134,7 @@ class CounterTable extends IPSModule {
             <thead>
             <tr>
                     <th  style="">
+                            Name:
                     </th>
                     
                     <th>
@@ -118,11 +146,11 @@ class CounterTable extends IPSModule {
                     </th>
                     
                     <th>
-                            Monatsgerenze:
+                            Woche:
                     </th>
                     
                     <th>
-                            Heute: 
+                            Tag: 
                     </th>
                     
                     <th>
@@ -135,33 +163,7 @@ class CounterTable extends IPSModule {
             </tr>
             
             </thead>
-            <tr style="background-color:'.$ColorGrenzeGesamt.';">
-            
-                    <td style="text-align:left;">
-                            Gesamt
-                    </td>
-                    
-                    <td>
-                            '.$ZaehlerGesamtGesamt.'
-                    </td>
-                    
-                    <td>
-                            '.$ZaehlerGesamtMonat.'
-                    </td>
-                            
-                    <td>
-                            '.$GrenzeZaehlerGesamt.' kWh
-                    </td>
-                    
-                    <td>
-                            '.$ZaehlerGesamtTag.'
-                    </td>
-                    
-                    <td>
-                            '.$KostenGesamt.'€
-                    </td>
-            
-            </tr>';
+            ';
 
        $htmlsuffix = '
        
