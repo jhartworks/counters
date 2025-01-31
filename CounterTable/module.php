@@ -8,7 +8,7 @@ class CounterTable extends IPSModule {
 
 
         $this->RegisterPropertyFloat("Price",0.23);
-        $this->ReadPropertyString("Counters","");
+        $this->RegisterPropertyString("Counters","");
 
         $this->RegisterVariableString("htmlOutput", "Zählerübersicht",["PRESENTATION"=> VARIABLE_PRESENTATION_LEGACY, "PROFILE" => "~HTMLBox"],0);
 
