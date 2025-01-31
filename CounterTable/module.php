@@ -39,41 +39,42 @@ class CounterTable extends IPSModule {
         $dataoutput = "";
        /// print_r($arr);
 
-        foreach($arr as $cnt){
+        if($arr != NULL){
+            foreach($arr as $cnt){
 
-            $cost = 0.0;
-            $cost = $cnt->Monthly * $price;
-            $dataoutput .= '        
-            <tr style="background-color:white;">
-            
-                <td style="text-align:left;">
-                        '.$cnt->Name.'
-                </td>
+                $cost = 0.0;
+                $cost = $cnt->Monthly * $price;
+                $dataoutput .= '        
+                <tr style="background-color:white;">
                 
-                <td>
-                        '.$cnt->Total.' kWh
-                </td>
-                
-                <td>
-                        '.$cnt->Monthly.' kWh
-                </td>
-                        
-                <td>
-                        '.$cnt->Weekly.' kWh
-                </td>
-                
-                <td>
-                        '.$cnt->Daily.' kWh
-                </td>
-                
-                <td>
-                        '.$cost.'€
-                </td>
+                    <td style="text-align:left;">
+                            '.$cnt->Name.'
+                    </td>
+                    
+                    <td>
+                            '.$cnt->Total.' kWh
+                    </td>
+                    
+                    <td>
+                            '.$cnt->Monthly.' kWh
+                    </td>
+                            
+                    <td>
+                            '.$cnt->Weekly.' kWh
+                    </td>
+                    
+                    <td>
+                            '.$cnt->Daily.' kWh
+                    </td>
+                    
+                    <td>
+                            '.$cost.'€
+                    </td>
 
-                </tr>';
+                    </tr>';
 
+            }
         }
-
         $this->createTable($dataoutput);
 
 /* 
