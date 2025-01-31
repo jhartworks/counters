@@ -34,7 +34,8 @@
                 "edit": {
                     "type": "SelectVariable",
                     "validVariableTypes": [7]
-                }
+                },
+                "add": 0
             }, 
             {
                 "caption": "Monatsverbrauch",
@@ -43,7 +44,8 @@
                 "edit": {
                     "type": "SelectVariable",
                     "validVariableTypes": [7]
-                }
+                },
+                "add": 0
             },
             {
                 "caption": "Wochenverbrauch",
@@ -52,7 +54,8 @@
                 "edit": {
                     "type": "SelectVariable",
                     "validVariableTypes": [7]
-                }
+                },
+                "add": 0
             },
             {
                 "caption": "Tagesverbrauch",
@@ -61,7 +64,8 @@
                 "edit": {
                     "type": "SelectVariable",
                     "validVariableTypes": [7]
-                }
+                },
+                "add": 0
             },
             {
                 "caption": "Limit",
@@ -70,7 +74,8 @@
                 "edit": {
                     "type": "NumberSpinner",
                     "digits": 2
-                }
+                },
+                "add": 0.1
             }
         
         
