@@ -1,0 +1,14 @@
+{
+    "id": "{D0DA85AB-1BAD-C36C-A3FD-1C2660F96F1C}",
+    "name": "CounterTable",
+    "type": 3,
+    "vendor": "J.H. Artworks",
+    "aliases":
+    [
+    ],
+    "url": "https://jh-artworks.com",
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "CT"
+}

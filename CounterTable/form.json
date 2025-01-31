@@ -1,0 +1,89 @@
+{
+    "elements":
+    [
+        { "type": "NumberSpinner", "Name": "Price", "caption": "Strompreis", "digits": 2},
+        {
+            "type": "List",
+            "name": "Counters",
+            "caption": "Zählerliste",
+            "add": true,
+            "delete": true,
+            "sort": {
+                "column": "Name",
+                "direction": "ascending"
+            },
+            "columns": [{
+                "caption": "InstanceID",
+                "name": "InstanceID", 
+                "width": "75px",
+                "add": 0,
+                "edit": {
+                    "type": "SelectInstance"
+                }
+            }, 
+            {
+                "caption": "Name",
+                "name": "Name",
+                "width": "auto",
+                "add": ""
+            }, 
+            {
+                "caption": "Gesamtverbrauch",
+                "name": "Total",
+                "width": "40px",
+                "edit": {
+                    "type": "SelectVariable",
+                    "validVariableTypes": [7]
+                }
+            }, 
+            {
+                "caption": "Monatsverbrauch",
+                "name": "Monthly",
+                "width": "75px",
+                "edit": {
+                    "type": "SelectVariable",
+                    "validVariableTypes": [7]
+                }
+            },
+            {
+                "caption": "Wochenverbrauch",
+                "name": "Weekly",
+                "width": "75px",
+                "edit": {
+                    "type": "SelectVariable",
+                    "validVariableTypes": [7]
+                }
+            },
+            {
+                "caption": "Tagesverbrauch",
+                "name": "Daily",
+                "width": "75px",
+                "edit": {
+                    "type": "SelectVariable",
+                    "validVariableTypes": [7]
+                }
+            },
+            {
+                "caption": "Limit",
+                "name": "Limit",
+                "width": "75px",
+                "edit": {
+                    "type": "NumberSpinner",
+                    "digits": 2
+                }
+            }
+        
+        
+        ]
+        }
+
+    ],
+    "actions":
+    [
+
+    ],
+    "status":
+    [
+
+    ]
+}
