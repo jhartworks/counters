@@ -1,0 +1,70 @@
+{
+    "elements": [
+        {
+            "type": "SelectCategory",
+            "name": "CounterCategoryID",
+            "caption": "Counter Kategorie"
+        },
+        {
+            "type": "SelectVariable",
+            "name": "JsonOutputVariableID",
+            "caption": "JSON Ausgabe Variable",
+            "validVariableTypes": [3]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "MQTT (optional)",
+            "items": [
+                {
+                    "type": "CheckBox",
+                    "name": "EnableMQTT",
+                    "caption": "MQTT senden"
+                },
+                {
+                    "type": "SelectInstance",
+                    "name": "MqttClientID",
+                    "caption": "MQTT Client",
+                    "visible": "EnableMQTT",
+                    "validModules": ["{C6D2AEB3-6E1F-4B2E-8D6E-2F0A6C4C2A7F}"]
+                },
+                {
+                    "type": "ValidationTextBox",
+                    "name": "MqttTopic",
+                    "caption": "MQTT Topic",
+                    "visible": "EnableMQTT",
+                    "placeholder": "clients/counters/json"
+                }
+            ]
+        },
+        {
+            "type": "NumberSpinner",
+            "name": "UpdateTime",
+            "caption": "Aktualisierungszeit (Sekunden)",
+            "digits": 0
+        }
+    ],
+    "actions": [
+        {
+            "type": "Button",
+            "caption": "Testlauf (JSON erzeugen)",
+            "onClick": "SECC_BuildAndStorePayload($id);"
+        }
+    ],
+    "status": [
+        {
+            "code": 101,
+            "icon": "active",
+            "caption": "Aktiv"
+        },
+        {
+            "code": 102,
+            "icon": "inactive",
+            "caption": "Keine Kategorie gewählt"
+        },
+        {
+            "code": 103,
+            "icon": "inactive",
+            "caption": "Keine JSON Variable gewählt"
+        }
+    ]
+}

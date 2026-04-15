@@ -1,0 +1,24 @@
+{
+    "elements": [
+        {
+            "type": "SelectInstance",
+            "name": "Connector",
+            "caption": "DB-Connector",
+            "validModules": ["{7B420C9A-F0FF-4C65-925D-6FEE0D8F1A55}"]
+        },
+        {
+            "type": "SelectVariable",
+            "name": "SourceJSON",
+            "caption": "JSON-Datenquelle",
+            "validVariableTypes": [3]
+        },
+        {
+            "type": "NumberSpinner",
+            "name": "UpdateTime",
+            "caption": "Aktualisierungszeit (Sekunden)",
+            "digits": 0
+        }
+    ],
+    "actions": [],
+    "status": []
+}

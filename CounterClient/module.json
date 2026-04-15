@@ -1,6 +1,6 @@
 {
-    "id": "{D0DA85AB-1BAD-C36C-A3FD-1C2660F96F1C}",
-    "name": "CounterTable",
+    "id": "{EF2E22EE-67DE-EF4F-42D0-C83C6E5E37C7}",
+    "name": "CounterClient",
     "type": 3,
     "vendor": "J.H. Artworks",
     "aliases":
@@ -10,5 +10,5 @@
     "parentRequirements": [],
     "childRequirements": [],
     "implemented": [],
-    "prefix": "CT"
+    "prefix": "SECC"
 }
