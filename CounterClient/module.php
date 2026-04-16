@@ -46,7 +46,7 @@ class CounterClient extends IPSModule
 
         if ($this->ReadPropertyBoolean('EnableMQTT')) {
             $mqttClientId = $this->ReadPropertyInteger('MqttClientID');
-            $mqttTopic = 'Projekte/'.$this->ReadPropertyInteger('Projectyear').'/P'.$this->ReadPropertyInteger('Projectnumber').'/Counters';
+            $mqttTopic = 'Projekte'.$this->ReadPropertyInteger('Projectyear').'/P'.$this->ReadPropertyInteger('Projectnumber').'/Counters';
 
             if ($mqttClientId > 0 && IPS_InstanceExists($mqttClientId) && $mqttTopic !== '') {
                 $this->MqttPublish($mqttClientId, $mqttTopic, $json, true);
