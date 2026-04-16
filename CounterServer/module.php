@@ -72,8 +72,9 @@ class CounterServer extends IPSModule
                 VALUES
                 (
                     " .  $this->esc($projectId) . "',
-                    '" . $this->esc(base64_encode($projectId.$clientId . '_' . $counterId)) . "',
                     '" . $this->esc($counterId) . "',
+                    '" . $this->base64_encode($projectId.$clientId . '_' . $counterId). "',
+
                     '" . $this->esc($clientId) . "',
                     '" . $this->esc($clientName) . "',
                     '" . $this->esc($type) . "',
@@ -94,7 +95,7 @@ class CounterServer extends IPSModule
             // ---------- GET meter_id ----------
             $sqlGet = "
                 SELECT id FROM meter_devices
-                WHERE meter_uuid = '" . $this->esc(base64_encode($projectId.$clientId . '_' . $counterId)) . "'
+                WHERE meter_uuid = '" . $this->base64_encode($projectId.$clientId . '_' . $counterId). "'
                 LIMIT 1
             ";
 
