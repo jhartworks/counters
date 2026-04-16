@@ -14,6 +14,12 @@
         },
         {
             "type": "NumberSpinner",
+            "name": "ClientIdPortal",
+            "caption": "Client-ID (Portal)",
+            "digits": 0
+        },
+    {
+            "type": "NumberSpinner",
             "name": "UpdateTime",
             "caption": "Aktualisierungszeit (Sekunden)",
             "digits": 0
