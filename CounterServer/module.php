@@ -74,7 +74,6 @@ class CounterServer extends IPSModule
                     " .  $this->esc($projectId) . "',
                     '" . $this->esc($counterId) . "',
                     '" . hash('sha256', $projectId.$clientId . '_' . $counterId) . "',
-
                     '" . $this->esc($clientId) . "',
                     '" . $this->esc($clientName) . "',
                     '" . $this->esc($type) . "',
