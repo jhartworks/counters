@@ -9,7 +9,7 @@ class CounterServer extends IPSModule
         $this->RegisterPropertyInteger('Connector', 0);
         $this->RegisterPropertyInteger('SourceJSON', 0);
         $this->RegisterPropertyInteger('UpdateTime', 60);
-        $this->RegisterPropertyInteger('ProjectIdPortal', 0);
+        $this->RegisterPropertyInteger('ProjectIdPortal', -1);
         $this->RegisterTimer('Update', 0, 'SECT_checkTable($_IPS[\'TARGET\']);');
     }
 
@@ -61,15 +61,17 @@ class CounterServer extends IPSModule
             $counterName = $c['name'] ?? $counterId;
             $type = $c['type'] ?? 'other';
             $unit = $c['unit'] ?? 'kWh';
+
             $projectId = $this->ReadPropertyInteger('ProjectIdPortal');
 
+            if ($projectId !== -1) {
             // ---------- UPSERT ----------
             $sql = "
                 INSERT INTO meter_devices
                 (project_id, counter_id, meter_uuid, external_id, external_name, meter_type, billing_unit, is_active)
                 VALUES
                 (
-                    " . ($projectId === 'NULL' ? 'NULL' : $projectId) . ",
+                    " .  $this->esc($projectId) . "',
                     '" . $this->esc($clientId . '_' . $counterId) . "',
                     '" . $this->esc($counterId) . "',
                     '" . $this->esc($clientId) . "',
@@ -85,7 +87,9 @@ class CounterServer extends IPSModule
                     is_active = 1
             ";
 
+                
             MySQL_ExecuteSimple($sqlId, $sql);
+            }
 
             // ---------- GET meter_id ----------
             $sqlGet = "
