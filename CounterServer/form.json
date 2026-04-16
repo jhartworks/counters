@@ -14,8 +14,8 @@
         },
         {
             "type": "NumberSpinner",
-            "name": "ClientIdPortal",
-            "caption": "Client-ID (Portal)",
+            "name": "ProjectIdPortal",
+            "caption": "Project-ID (Portal)",
             "digits": 0
         },
     {

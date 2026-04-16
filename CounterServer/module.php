@@ -61,7 +61,7 @@ class CounterServer extends IPSModule
             $counterName = $c['name'] ?? $counterId;
             $type = $c['type'] ?? 'other';
             $unit = $c['unit'] ?? 'kWh';
-            $projectId = $this->ReadPropertyInteger('ClientIdPortal');
+            $projectId = $this->ReadPropertyInteger('ProjectIdPortal');
 
             // ---------- UPSERT ----------
             $sql = "
