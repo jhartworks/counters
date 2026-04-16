@@ -104,7 +104,7 @@ class CounterServer extends IPSModule
                 continue;
             }
 
-            $meterId = (int)$res[0]['id'];
+            $meterId = $res[0]->id;
 
             // ---------- INSERT measurement ----------
             $sqlInsert = "
