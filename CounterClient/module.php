@@ -12,10 +12,10 @@ class CounterClient extends IPSModule
         $this->RegisterPropertyBoolean('EnableMQTT', false);
         $this->RegisterPropertyInteger('MqttClientID', 0);
         $this->RegisterPropertyString('Projectname', '');
-         $this->RegisterPropertyInteger('Projectyear', 2026);
-          $this->RegisterPropertyInteger('Projectnumber', 0);
+        $this->RegisterPropertyInteger('Projectyear', 2026);
+        $this->RegisterPropertyInteger('Projectnumber', 0);
 
-        $this->RegisterTimer('Update', 0, 'SECC_BuildAndStorePayload('.$this->InstanceID.');');
+        $this->RegisterTimer('Update', 0, 'SECC_BuildAndStorePayload(' . $this->InstanceID . ');');
     }
 
     public function ApplyChanges()
@@ -46,7 +46,7 @@ class CounterClient extends IPSModule
 
         if ($this->ReadPropertyBoolean('EnableMQTT')) {
             $mqttClientId = $this->ReadPropertyInteger('MqttClientID');
-            $mqttTopic = 'Projekte'.$this->ReadPropertyInteger('Projectyear').'/P'.$this->ReadPropertyInteger('Projectnumber').'/Counters';
+            $mqttTopic = 'Projekte' . $this->ReadPropertyInteger('Projectyear') . '/P' . $this->ReadPropertyInteger('Projectnumber') . '/Counters';
 
             if ($mqttClientId > 0 && IPS_InstanceExists($mqttClientId) && $mqttTopic !== '') {
                 $this->MqttPublish($mqttClientId, $mqttTopic, $json, true);
@@ -65,23 +65,29 @@ class CounterClient extends IPSModule
         }
 
         $counterIds = IPS_GetChildrenIDs($counterCategoryId);
+
         $payload = [
             'timestamp' => date('Y-m-d H:i:s'),
             'counters'  => []
         ];
 
         foreach ($counterIds as $counterObjectId) {
+            if (!IPS_ObjectExists($counterObjectId)) {
+                continue;
+            }
+
             $obj = IPS_GetObject($counterObjectId);
 
-            if ($obj['ObjectType'] != 0) {
+            if ((int)$obj['ObjectType'] !== 0) {
                 continue;
             }
 
             $counterName = IPS_GetName($counterObjectId);
             $counterId = $this->makeSlug($counterName);
 
-            $varIds = $this->CollectVariablesRecursive($counterObjectId);
-            if (count($varIds) === 0) {
+            $entries = $this->CollectEntriesRecursive($counterObjectId, [$counterName], []);
+            if (count($entries) === 0) {
+                IPS_LogMessage('CounterClient', 'Keine Variablen gefunden in Counter: ' . $counterName);
                 continue;
             }
 
@@ -93,15 +99,15 @@ class CounterClient extends IPSModule
             $tempSlots = [];
             $pressureSlots = [];
 
-            foreach ($varIds as $varId) {
-                $classified = $this->ClassifyVariable($varId);
+            foreach ($entries as $entry) {
+                $classified = $this->ClassifyEntry($entry);
                 if ($classified === null) {
                     continue;
                 }
 
                 $field = $classified['field'];
                 $value = $classified['value'];
-                $unit  = $classified['unit'];
+                $unit = $classified['unit'];
 
                 if ($field === 'temperature_auto') {
                     $tempSlots[] = $classified;
@@ -123,64 +129,98 @@ class CounterClient extends IPSModule
             $this->assignInOutValues($counterData, $tempSlots, 'temperature_in_value', 'temperature_out_value');
             $this->assignInOutValues($counterData, $pressureSlots, 'pressure_in_value', 'pressure_out_value');
 
-            $counterData['type'] = $this->DetectCounterType($counterData);
+            $contextString = mb_strtolower($counterName . ' ' . implode(' ', array_map(function ($e) {
+                return $e['context'];
+            }, $entries)));
+
+            $counterData['type'] = $this->DetectCounterType($counterData, $contextString);
 
             if (!isset($counterData['unit'])) {
                 $counterData['unit'] = $this->inferDefaultUnit($counterData);
             }
 
-            if (count($counterData) > 3) {
+            if ($this->hasUsableMeasurement($counterData)) {
                 $payload['counters'][] = $counterData;
+            } else {
+                IPS_LogMessage('CounterClient', 'Counter ohne erkannte Messwerte übersprungen: ' . $counterName);
             }
         }
 
         return json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
-    private function CollectVariablesRecursive(int $objectId): array
+    private function CollectEntriesRecursive(int $objectId, array $pathParts, array $visited): array
     {
         $result = [];
+
+        if (isset($visited[$objectId])) {
+            return $result;
+        }
+        $visited[$objectId] = true;
+
+        if (!IPS_ObjectExists($objectId)) {
+            return $result;
+        }
+
+        if (IPS_LinkExists($objectId)) {
+            $link = IPS_GetLink($objectId);
+            $targetId = (int)$link['TargetID'];
+            $linkName = IPS_GetName($objectId);
+
+            if ($targetId > 0 && IPS_ObjectExists($targetId)) {
+                $newPath = $pathParts;
+                if ($linkName !== '') {
+                    $newPath[] = $linkName;
+                }
+
+                return $this->CollectEntriesRecursive($targetId, $newPath, $visited);
+            }
+
+            return $result;
+        }
+
+        if (IPS_VariableExists($objectId)) {
+            $result[] = [
+                'varId'    => $objectId,
+                'context'  => $this->buildContextString($pathParts, IPS_GetName($objectId)),
+                'path'     => $pathParts,
+                'varName'  => IPS_GetName($objectId)
+            ];
+            return $result;
+        }
+
         $children = IPS_GetChildrenIDs($objectId);
-
         foreach ($children as $childId) {
-            if (IPS_LinkExists($childId)) {
-                $link = IPS_GetLink($childId);
-                $targetId = (int) $link['TargetID'];
-
-                if (IPS_VariableExists($targetId)) {
-                    $result[$targetId] = $targetId;
-                } elseif (IPS_ObjectExists($targetId)) {
-                    foreach ($this->CollectVariablesRecursive($targetId) as $subVarId) {
-                        $result[$subVarId] = $subVarId;
-                    }
-                }
-
+            if (!IPS_ObjectExists($childId)) {
                 continue;
             }
 
-            if (IPS_VariableExists($childId)) {
-                $result[$childId] = $childId;
-                continue;
+            $childName = IPS_GetName($childId);
+            $newPath = $pathParts;
+
+            if ($childName !== '') {
+                $newPath[] = $childName;
             }
 
-            if (IPS_ObjectExists($childId)) {
-                foreach ($this->CollectVariablesRecursive($childId) as $subVarId) {
-                    $result[$subVarId] = $subVarId;
-                }
+            $sub = $this->CollectEntriesRecursive($childId, $newPath, $visited);
+            foreach ($sub as $entry) {
+                $result[] = $entry;
             }
         }
 
-        return array_values($result);
+        return $result;
     }
 
-    private function ClassifyVariable(int $varId): ?array
+    private function ClassifyEntry(array $entry): ?array
     {
+        $varId = (int)$entry['varId'];
+
         if (!IPS_VariableExists($varId)) {
             return null;
         }
 
         $var = IPS_GetVariable($varId);
-        $type = (int) $var['VariableType'];
+        $type = (int)$var['VariableType'];
 
         if ($type !== 1 && $type !== 2) {
             return null;
@@ -194,15 +234,17 @@ class CounterClient extends IPSModule
         }
 
         if ($profileName === '' || !IPS_VariableProfileExists($profileName)) {
+            IPS_LogMessage('CounterClient', 'Variable ohne gültiges Profil ignoriert: ' . $entry['context']);
             return null;
         }
 
         $profile = IPS_GetVariableProfile($profileName);
-        $suffix = trim((string) $profile['Suffix']);
-        $prefix = trim((string) $profile['Prefix']);
+        $suffix = trim((string)$profile['Suffix']);
+        $prefix = trim((string)$profile['Prefix']);
         $unit = trim($prefix . ' ' . $suffix);
 
         if ($unit === '') {
+            IPS_LogMessage('CounterClient', 'Variable ohne Einheit ignoriert: ' . $entry['context']);
             return null;
         }
 
@@ -211,135 +253,144 @@ class CounterClient extends IPSModule
             return null;
         }
 
-        $value = round((float) $value, 3);
-
-        $varName = mb_strtolower(IPS_GetName($varId));
-        $parentId = IPS_GetParent($varId);
-        if ($parentId > 0) {
-            $varName = mb_strtolower(IPS_GetName($parentId) . ' ' . IPS_GetName($varId));
-        }
-
+        $value = round((float)$value, 3);
+        $context = mb_strtolower($entry['context']);
         $unitNorm = $this->normalizeUnit($unit);
 
-        if (in_array($unitNorm, ['kwh', 'kw/h', 'wh', 'mwh', 'm3', 'l'], true)) {
+        if ($this->isTotalUnit($unitNorm, $context)) {
             return [
-                'field' => 'total_value',
-                'value' => $value,
-                'unit'  => $suffix !== '' ? trim($suffix) : $unitNorm,
-                'name'  => $varName
+                'field'   => 'total_value',
+                'value'   => $value,
+                'unit'    => $this->formatOutputUnit($suffix, $unitNorm),
+                'name'    => $context,
+                'context' => $context
             ];
         }
 
-        if (in_array($unitNorm, ['kw', 'w', 'mw'], true)) {
+        if ($this->isPowerUnit($unitNorm, $context)) {
             return [
-                'field' => 'power_value',
-                'value' => $value,
-                'unit'  => $unitNorm,
-                'name'  => $varName
+                'field'   => 'power_value',
+                'value'   => $value,
+                'unit'    => $unitNorm,
+                'name'    => $context,
+                'context' => $context
             ];
         }
 
-        if (in_array($unitNorm, ['m3/h', 'l/h', 'l/min'], true)) {
+        if ($this->isFlowUnit($unitNorm, $context)) {
             return [
-                'field' => 'flow_value',
-                'value' => $value,
-                'unit'  => $unitNorm,
-                'name'  => $varName
+                'field'   => 'flow_value',
+                'value'   => $value,
+                'unit'    => $unitNorm,
+                'name'    => $context,
+                'context' => $context
             ];
         }
 
         if ($unitNorm === 'a') {
             return [
-                'field' => 'current_value',
-                'value' => $value,
-                'unit'  => $unitNorm,
-                'name'  => $varName
+                'field'   => 'current_value',
+                'value'   => $value,
+                'unit'    => $unitNorm,
+                'name'    => $context,
+                'context' => $context
             ];
         }
 
         if ($unitNorm === 'v') {
             return [
-                'field' => 'voltage_value',
-                'value' => $value,
-                'unit'  => $unitNorm,
-                'name'  => $varName
+                'field'   => 'voltage_value',
+                'value'   => $value,
+                'unit'    => $unitNorm,
+                'name'    => $context,
+                'context' => $context
             ];
         }
 
         if ($unitNorm === 'hz') {
             return [
-                'field' => 'frequency_value',
-                'value' => $value,
-                'unit'  => $unitNorm,
-                'name'  => $varName
+                'field'   => 'frequency_value',
+                'value'   => $value,
+                'unit'    => $unitNorm,
+                'name'    => $context,
+                'context' => $context
             ];
         }
 
         if (in_array($unitNorm, ['bar', 'mbar', 'pa'], true)) {
-            if ($this->looksLikeIn($varName)) {
+            if ($this->looksLikeIn($context)) {
                 return [
-                    'field' => 'pressure_in_value',
-                    'value' => $value,
-                    'unit'  => $unitNorm,
-                    'name'  => $varName
+                    'field'   => 'pressure_in_value',
+                    'value'   => $value,
+                    'unit'    => $unitNorm,
+                    'name'    => $context,
+                    'context' => $context
                 ];
             }
 
-            if ($this->looksLikeOut($varName)) {
+            if ($this->looksLikeOut($context)) {
                 return [
-                    'field' => 'pressure_out_value',
-                    'value' => $value,
-                    'unit'  => $unitNorm,
-                    'name'  => $varName
+                    'field'   => 'pressure_out_value',
+                    'value'   => $value,
+                    'unit'    => $unitNorm,
+                    'name'    => $context,
+                    'context' => $context
                 ];
             }
 
             return [
-                'field' => 'pressure_auto',
-                'value' => $value,
-                'unit'  => $unitNorm,
-                'name'  => $varName
+                'field'   => 'pressure_auto',
+                'value'   => $value,
+                'unit'    => $unitNorm,
+                'name'    => $context,
+                'context' => $context
             ];
         }
 
         if (in_array($unitNorm, ['°c', 'c', 'k'], true)) {
-            if ($this->looksLikeIn($varName)) {
+            if ($this->looksLikeIn($context)) {
                 return [
-                    'field' => 'temperature_in_value',
-                    'value' => $value,
-                    'unit'  => $unitNorm,
-                    'name'  => $varName
+                    'field'   => 'temperature_in_value',
+                    'value'   => $value,
+                    'unit'    => $unitNorm,
+                    'name'    => $context,
+                    'context' => $context
                 ];
             }
 
-            if ($this->looksLikeOut($varName)) {
+            if ($this->looksLikeOut($context)) {
                 return [
-                    'field' => 'temperature_out_value',
-                    'value' => $value,
-                    'unit'  => $unitNorm,
-                    'name'  => $varName
+                    'field'   => 'temperature_out_value',
+                    'value'   => $value,
+                    'unit'    => $unitNorm,
+                    'name'    => $context,
+                    'context' => $context
                 ];
             }
 
             return [
-                'field' => 'temperature_auto',
-                'value' => $value,
-                'unit'  => $unitNorm,
-                'name'  => $varName
+                'field'   => 'temperature_auto',
+                'value'   => $value,
+                'unit'    => $unitNorm,
+                'name'    => $context,
+                'context' => $context
             ];
         }
 
         if ($unitNorm === 'cos' || $unitNorm === 'cosphi' || $unitNorm === 'pf') {
             return [
-                'field' => 'power_factor',
-                'value' => $value,
-                'unit'  => $unitNorm,
-                'name'  => $varName
+                'field'   => 'power_factor',
+                'value'   => $value,
+                'unit'    => $unitNorm,
+                'name'    => $context,
+                'context' => $context
             ];
         }
 
+        IPS_LogMessage('CounterClient', 'Nicht erkannt: ' . $context . ' | Unit: ' . $unitNorm . ' | Profile: ' . $profileName);
         return null;
     }
+
     private function assignInOutValues(array &$counterData, array $items, string $fieldIn, string $fieldOut): void
     {
         foreach ($items as $item) {
@@ -367,28 +418,38 @@ class CounterClient extends IPSModule
         }
     }
 
-    private function DetectCounterType(array $counterData): string
+    private function DetectCounterType(array $counterData, string $context): string
     {
-        $unit = isset($counterData['unit']) ? $this->normalizeUnit((string) $counterData['unit']) : '';
+        $unit = isset($counterData['unit']) ? $this->normalizeUnit((string)$counterData['unit']) : '';
+        $ctx = mb_strtolower($context);
 
         if (isset($counterData['voltage_value']) || isset($counterData['current_value']) || isset($counterData['frequency_value']) || isset($counterData['power_factor'])) {
             return 'electricity';
         }
 
         if (isset($counterData['temperature_in_value']) || isset($counterData['temperature_out_value'])) {
+            if (strpos($ctx, 'kalt') !== false || strpos($ctx, 'cool') !== false || strpos($ctx, 'kaelte') !== false || strpos($ctx, 'kälte') !== false) {
+                return 'cooling';
+            }
             return 'heat';
         }
 
         if ($unit === 'm3' || $unit === 'l') {
+            if (strpos($ctx, 'gas') !== false) {
+                return 'gas';
+            }
             return 'water';
         }
 
-        if ($unit === 'kwh' || $unit === 'mwh' || $unit === 'wh') {
-            if (isset($counterData['temperature_in_value']) || isset($counterData['flow_value'])) {
+        if ($unit === 'kwh' || $unit === 'kw/h' || $unit === 'mwh' || $unit === 'wh') {
+            if (isset($counterData['flow_value']) || strpos($ctx, 'waerme') !== false || strpos($ctx, 'wärme') !== false || strpos($ctx, 'warmwasser') !== false || strpos($ctx, 'heizung') !== false) {
                 return 'heat';
             }
-
             return 'electricity';
+        }
+
+        if (strpos($ctx, 'gas') !== false) {
+            return 'gas';
         }
 
         return 'other';
@@ -397,42 +458,142 @@ class CounterClient extends IPSModule
     private function inferDefaultUnit(array $counterData): string
     {
         if (isset($counterData['total_value'])) {
-            if ($counterData['type'] === 'water') {
+            if ($counterData['type'] === 'water' || $counterData['type'] === 'gas') {
                 return 'm3';
             }
-
             return 'kWh';
         }
 
         return '';
     }
 
+    private function hasUsableMeasurement(array $counterData): bool
+    {
+        $fields = [
+            'total_value',
+            'consumption_value',
+            'power_value',
+            'flow_value',
+            'current_value',
+            'voltage_value',
+            'temperature_in_value',
+            'temperature_out_value',
+            'pressure_in_value',
+            'pressure_out_value',
+            'frequency_value',
+            'power_factor'
+        ];
+
+        foreach ($fields as $field) {
+            if (array_key_exists($field, $counterData)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function isTotalUnit(string $unitNorm, string $context): bool
+    {
+        if (in_array($unitNorm, ['kwh', 'wh', 'mwh', 'm3', 'l'], true)) {
+            return true;
+        }
+
+        if ($unitNorm === 'kw/h' || $unitNorm === 'w/h' || $unitNorm === 'mw/h') {
+            return true;
+        }
+
+        if (strpos($context, 'energy') !== false && in_array($unitNorm, ['kw', 'w', 'mw'], true)) {
+            return true;
+        }
+
+        if (strpos($context, 'volume') !== false && in_array($unitNorm, ['m3', 'l'], true)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function isPowerUnit(string $unitNorm, string $context): bool
+    {
+        if (in_array($unitNorm, ['kw', 'w', 'mw'], true)) {
+            if (strpos($context, 'energy') !== false) {
+                return false;
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    private function isFlowUnit(string $unitNorm, string $context): bool
+    {
+        if (in_array($unitNorm, ['m3/h', 'l/h', 'l/min'], true)) {
+            return true;
+        }
+
+        if (strpos($context, 'flow') !== false && in_array($unitNorm, ['m3', 'l'], true)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function formatOutputUnit(string $suffix, string $unitNorm): string
+    {
+        $suffix = trim($suffix);
+        if ($suffix !== '') {
+            return $suffix;
+        }
+
+        if ($unitNorm === 'm3') {
+            return 'm³';
+        }
+
+        if ($unitNorm === 'kwh') {
+            return 'kWh';
+        }
+
+        if ($unitNorm === 'kw/h') {
+            return 'kW/h';
+        }
+
+        return $unitNorm;
+    }
+
     private function looksLikeIn(string $name): bool
     {
+        $name = mb_strtolower($name);
+
         return strpos($name, 'vorlauf') !== false
             || strpos($name, 'vl') !== false
             || strpos($name, 'flow') !== false
             || strpos($name, 'ein') !== false
-            || strpos($name, ' in ') !== false
-            || strpos($name, 'iv') !== false;
+            || strpos($name, 'iv') !== false
+            || strpos($name, 'inlet') !== false;
     }
 
     private function looksLikeOut(string $name): bool
     {
+        $name = mb_strtolower($name);
+
         return strpos($name, 'ruecklauf') !== false
             || strpos($name, 'rücklauf') !== false
             || strpos($name, 'rl') !== false
             || strpos($name, 'return') !== false
             || strpos($name, 'aus') !== false
-            || strpos($name, ' out ') !== false
-            || strpos($name, 'ri') !== false;
+            || strpos($name, 'ri') !== false
+            || strpos($name, 'outlet') !== false;
     }
 
     private function normalizeUnit(string $unit): string
     {
         $unit = mb_strtolower(trim($unit));
-        $unit = str_replace([' ', '°'], ['', '°'], $unit);
+        $unit = str_replace(["\xc2\xa0", ' '], '', $unit);
         $unit = str_replace(['m³', '㎥'], 'm3', $unit);
+        $unit = str_replace(['°'], '°', $unit);
+        $unit = str_replace(['kw/hh'], 'kw/h', $unit);
+        $unit = str_replace(['㎾/h'], 'kw/h', $unit);
         return $unit;
     }
 
@@ -449,73 +610,85 @@ class CounterClient extends IPSModule
 
         return $text;
     }
-    public function MqttPublish($server_id, $topic, $payload, $retain) {
-        // ensure server instance exists
-        if(!IPS_InstanceExists($server_id)) {
+
+    private function buildContextString(array $pathParts, string $varName): string
+    {
+        $parts = $pathParts;
+        if ($varName !== '') {
+            $parts[] = $varName;
+        }
+
+        $parts = array_values(array_filter($parts, function ($v) {
+            return trim((string)$v) !== '';
+        }));
+
+        return implode(' ', $parts);
+    }
+
+    public function MqttPublish($server_id, $topic, $payload, $retain)
+    {
+        if (!IPS_InstanceExists($server_id)) {
             return false;
         }
 
-
-
         $ips_var_type = 3;
+        $module_id = '{01C00ADD-D04E-452E-B66A-D253278743FE}';
+        $ident = 'TempMQTTDevice_' . $this->InstanceID;
 
+        if (!IPS_SemaphoreEnter($ident, 100)) {
+            return false;
+        }
 
-        $module_id = "{01C00ADD-D04E-452E-B66A-D253278743FE}" /* Module ID of MQTT Server Device */;
-        $ident = "TempMQTTDevice";
-
-        // enter semaphore to ensure the temporary device gets used by one thread at a time
-        if(IPS_SemaphoreEnter($ident, 100)) {
-            // get temporary MQTT Server Device or create if needed
-            $id = @IPS_GetObjectIDByIdent($ident, $_IPS['SELF']);
-            if($id === false) {
+        try {
+            $id = @IPS_GetObjectIDByIdent($ident, $this->InstanceID);
+            if ($id === false) {
                 $id = @IPS_CreateInstance($module_id);
-                if($id === false) {
+                if ($id === false) {
+                    IPS_SemaphoreLeave($ident);
                     return false;
                 }
-                IPS_SetParent($id, $_IPS['SELF']);
+                IPS_SetParent($id, $this->InstanceID);
                 IPS_SetIdent($id, $ident);
             }
 
-            // ensure the specified server instance is actually compatible
-            if(!IPS_IsInstanceCompatible($id, $server_id)) {
+            if (!IPS_IsInstanceCompatible($id, $server_id)) {
+                IPS_SemaphoreLeave($ident);
                 return false;
             }
 
-            // ensure that the temporary device is actually connected to the correct server instance
             $inst_config = IPS_GetInstance($id);
-            if($inst_config["ConnectionID"] != $server_id) {
+            if ((int)$inst_config['ConnectionID'] !== (int)$server_id) {
                 IPS_DisconnectInstance($id);
-                if(!@IPS_ConnectInstance($id, $server_id)) {
+                if (!@IPS_ConnectInstance($id, $server_id)) {
+                    IPS_SemaphoreLeave($ident);
                     return false;
                 }
             }
 
-            // name object to help with debugging
-            IPS_SetName($id, "Temporary MQTT Device for: " . $topic);
+            IPS_SetName($id, 'Temporary MQTT Device for: ' . $topic);
 
-            // configure temporary device
-            $config_arr = array(
-                "Retain" => $retain,
-                "Topic" => $topic,
-                "Type" => $ips_var_type
-            );
-            $config_str = json_encode($config_arr);
-            IPS_SetConfiguration($id, $config_str);
-            IPS_SetHidden($id,true);
+            $config_arr = [
+                'Retain' => $retain,
+                'Topic'  => $topic,
+                'Type'   => $ips_var_type
+            ];
+
+            IPS_SetConfiguration($id, json_encode($config_arr));
+            IPS_SetHidden($id, true);
             IPS_ApplyChanges($id);
 
-            // get Value variable and use it to publish the payload
-            $var_id = @IPS_GetObjectIDByIdent("Value", $id);
-            RequestAction($var_id, $payload);
+            $var_id = @IPS_GetObjectIDByIdent('Value', $id);
+            if ($var_id === false) {
+                IPS_SemaphoreLeave($ident);
+                return false;
+            }
 
+            RequestAction($var_id, $payload);
+        } finally {
             IPS_SemaphoreLeave($ident);
-        } else { // semaphore timeout
-            return false;
         }
 
         return true;
-    } // MQTT_Publish
-
-
+    }
 }
 ?>
