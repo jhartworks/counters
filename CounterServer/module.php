@@ -71,7 +71,7 @@ class CounterServer extends IPSModule
                 (project_id, counter_id, meter_uuid, external_id, external_name, meter_type, billing_unit, is_active)
                 VALUES
                 (
-                    " .  $this->esc($projectId) . "',
+                    '" .  $this->esc($projectId) . "',
                     '" . $this->esc($counterId) . "',
                     '" . hash('sha256', $projectId.$clientId . '_' . $counterId) . "',
                     '" . $this->esc($clientId) . "',
