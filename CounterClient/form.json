@@ -44,22 +44,5 @@
             "caption": "Testlauf (JSON erzeugen)",
             "onClick": "SECC_BuildAndStorePayload($id);"
         }
-    ],
-    "status": [
-        {
-            "code": 101,
-            "icon": "active",
-            "caption": "Aktiv"
-        },
-        {
-            "code": 102,
-            "icon": "inactive",
-            "caption": "Keine Kategorie gewählt"
-        },
-        {
-            "code": 103,
-            "icon": "inactive",
-            "caption": "Keine JSON Variable gewählt"
-        }
     ]
 }

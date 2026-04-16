@@ -15,7 +15,7 @@ class CounterClient extends IPSModule
          $this->RegisterPropertyInteger('Projectyear', 2026);
           $this->RegisterPropertyInteger('Projectnumber', 0);
 
-        $this->RegisterTimer('Update', 0, 'SECC_BuildAndStorePayload($id);');
+        $this->RegisterTimer('Update', 0, 'SECC_BuildAndStorePayload('.$this->InstanceID.');');
     }
 
     public function ApplyChanges()
@@ -442,7 +442,7 @@ class CounterClient extends IPSModule
 
         return $text;
     }
-        public function MqttPublish($server_id, $topic, $payload, $retain) {
+    public function MqttPublish($server_id, $topic, $payload, $retain) {
         // ensure server instance exists
         if(!IPS_InstanceExists($server_id)) {
             return false;
