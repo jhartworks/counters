@@ -11,7 +11,7 @@ class CounterServer extends IPSModule
         $this->RegisterPropertyInteger('UpdateTime', 60);
         $this->RegisterPropertyString('Projectname', 60);
         $this->RegisterPropertyInteger('ProjectIdPortal', -1);
-        $this->RegisterTimer('Update', 0, 'SECT_checkTable($_IPS[\'TARGET\']);');
+        $this->RegisterTimer('Update', 0, 'SECS_checkTable('.$this->InstanceID.');');
     }
 
     public function ApplyChanges()
