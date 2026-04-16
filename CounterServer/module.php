@@ -66,18 +66,18 @@ class CounterServer extends IPSModule
             // ---------- UPSERT ----------
             $sql = "
                 INSERT INTO meter_devices
-                (project_id, client_id, counter_id, meter_uuid, meter_name, external_id, meter_type, billing_unit, description, is_active)
+                (project_id, counter_id, meter_uuid, meter_name, external_id, external_name, meter_type, billing_unit, is_active)
                 VALUES
                 (
                     " . ($projectId === 'NULL' ? 'NULL' : $projectId) . ",
-                    '" . $this->esc($clientId) . "',
                     '" . $this->esc($counterId) . "',
                     '" . $this->esc($clientId . '_' . $counterId) . "',
                     '" . $this->esc($counterName) . "',
                     '" . $this->esc($counterId) . "',
+                    '" . $this->esc($clientId) . "',
+                    '" . $this->esc($clientName) . "',
                     '" . $this->esc($type) . "',
                     '" . $this->esc($unit) . "',
-                    '" . $this->esc('Client: ' . $clientName) . "',
                     1
                 )
                 ON DUPLICATE KEY UPDATE
