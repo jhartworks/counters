@@ -9,7 +9,7 @@ class CounterServer extends IPSModule
         $this->RegisterPropertyInteger('Connector', 0);
         $this->RegisterPropertyInteger('SourceJSON', 0);
         $this->RegisterPropertyInteger('UpdateTime', 60);
-        $this->RegisterPropertyInteger('ClientIdPortal', 0);
+        $this->RegisterPropertyInteger('ProjectIdPortal', 0);
         $this->RegisterTimer('Update', 0, 'SECT_checkTable($_IPS[\'TARGET\']);');
     }
 
