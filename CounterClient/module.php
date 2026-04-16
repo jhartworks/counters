@@ -212,10 +212,16 @@ class CounterClient extends IPSModule
         }
 
         $value = round((float) $value, 3);
+
         $varName = mb_strtolower(IPS_GetName($varId));
+        $parentId = IPS_GetParent($varId);
+        if ($parentId > 0) {
+            $varName = mb_strtolower(IPS_GetName($parentId) . ' ' . IPS_GetName($varId));
+        }
+
         $unitNorm = $this->normalizeUnit($unit);
 
-        if (in_array($unitNorm, ['kwh', 'wh', 'mwh', 'm3', 'l'], true)) {
+        if (in_array($unitNorm, ['kwh', 'kw/h', 'wh', 'mwh', 'm3', 'l'], true)) {
             return [
                 'field' => 'total_value',
                 'value' => $value,
@@ -334,7 +340,6 @@ class CounterClient extends IPSModule
 
         return null;
     }
-
     private function assignInOutValues(array &$counterData, array $items, string $fieldIn, string $fieldOut): void
     {
         foreach ($items as $item) {
@@ -408,7 +413,8 @@ class CounterClient extends IPSModule
             || strpos($name, 'vl') !== false
             || strpos($name, 'flow') !== false
             || strpos($name, 'ein') !== false
-            || strpos($name, 'in') !== false;
+            || strpos($name, ' in ') !== false
+            || strpos($name, 'iv') !== false;
     }
 
     private function looksLikeOut(string $name): bool
@@ -418,7 +424,8 @@ class CounterClient extends IPSModule
             || strpos($name, 'rl') !== false
             || strpos($name, 'return') !== false
             || strpos($name, 'aus') !== false
-            || strpos($name, 'out') !== false;
+            || strpos($name, ' out ') !== false
+            || strpos($name, 'ri') !== false;
     }
 
     private function normalizeUnit(string $unit): string
