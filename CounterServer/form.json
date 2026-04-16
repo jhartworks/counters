@@ -13,6 +13,17 @@
             "validVariableTypes": [3]
         },
         {
+            "type": "Text",
+            "name": "Projectname",
+            "caption": "Projekt-Name"
+        },
+        {   
+            "type": "NumberSpinner",
+            "name": "ProjectIdPortal",
+            "caption": "Project-ID (Portal)",
+            "digits": 0
+        },
+        {
             "type": "NumberSpinner",
             "name": "ProjectIdPortal",
             "caption": "Project-ID (Portal)",
