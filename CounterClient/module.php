@@ -9,8 +9,13 @@ class CounterClient extends IPSModule
         $this->RegisterPropertyInteger('CounterCategoryID', 0);
         $this->RegisterPropertyInteger('JsonOutputVariableID', 0);
         $this->RegisterPropertyInteger('UpdateTime', 60);
+        $this->RegisterPropertyBoolean('EnableMQTT', false);
+        $this->RegisterPropertyInteger('MqttClientID', 0);
+        $this->RegisterPropertyString('Projectname', '');
+         $this->RegisterPropertyInteger('Projectyear', 2026);
+          $this->RegisterPropertyInteger('Projectnumber', 0);
 
-        $this->RegisterTimer('Update', 0, 'SECC_BuildAndStorePayload($_IPS[\'TARGET\']);');
+        $this->RegisterTimer('Update', 0, 'SECC_BuildAndStorePayload($id);');
     }
 
     public function ApplyChanges()
@@ -38,6 +43,17 @@ class CounterClient extends IPSModule
         }
 
         IPS_LogMessage('CounterClient', $json);
+
+        if ($this->ReadPropertyBoolean('EnableMQTT')) {
+            $mqttClientId = $this->ReadPropertyInteger('MqttClientID');
+            $mqttTopic = $this->ReadPropertyInteger('Projectyear').'/'.$this->ReadPropertyInteger('Projectnumber').'/Counters';
+
+            if ($mqttClientId > 0 && IPS_InstanceExists($mqttClientId) && $mqttTopic !== '') {
+                $this->MqttPublish($mqttClientId, $mqttTopic, $json, true);
+            } else {
+                IPS_LogMessage('CounterClient', 'MQTT ist aktiviert, aber ungültige MQTT Client ID oder Topic.');
+            }
+        }
     }
 
     public function BuildPayload()
@@ -426,5 +442,73 @@ class CounterClient extends IPSModule
 
         return $text;
     }
+        public function MqttPublish($server_id, $topic, $payload, $retain) {
+        // ensure server instance exists
+        if(!IPS_InstanceExists($server_id)) {
+            return false;
+        }
+
+
+
+        $ips_var_type = 3;
+
+
+        $module_id = "{01C00ADD-D04E-452E-B66A-D253278743FE}" /* Module ID of MQTT Server Device */;
+        $ident = "TempMQTTDevice";
+
+        // enter semaphore to ensure the temporary device gets used by one thread at a time
+        if(IPS_SemaphoreEnter($ident, 100)) {
+            // get temporary MQTT Server Device or create if needed
+            $id = @IPS_GetObjectIDByIdent($ident, $_IPS['SELF']);
+            if($id === false) {
+                $id = @IPS_CreateInstance($module_id);
+                if($id === false) {
+                    return false;
+                }
+                IPS_SetParent($id, $_IPS['SELF']);
+                IPS_SetIdent($id, $ident);
+            }
+
+            // ensure the specified server instance is actually compatible
+            if(!IPS_IsInstanceCompatible($id, $server_id)) {
+                return false;
+            }
+
+            // ensure that the temporary device is actually connected to the correct server instance
+            $inst_config = IPS_GetInstance($id);
+            if($inst_config["ConnectionID"] != $server_id) {
+                IPS_DisconnectInstance($id);
+                if(!@IPS_ConnectInstance($id, $server_id)) {
+                    return false;
+                }
+            }
+
+            // name object to help with debugging
+            IPS_SetName($id, "Temporary MQTT Device for: " . $topic);
+
+            // configure temporary device
+            $config_arr = array(
+                "Retain" => $retain,
+                "Topic" => $topic,
+                "Type" => $ips_var_type
+            );
+            $config_str = json_encode($config_arr);
+            IPS_SetConfiguration($id, $config_str);
+            IPS_SetHidden($id,true);
+            IPS_ApplyChanges($id);
+
+            // get Value variable and use it to publish the payload
+            $var_id = @IPS_GetObjectIDByIdent("Value", $id);
+            RequestAction($var_id, $payload);
+
+            IPS_SemaphoreLeave($ident);
+        } else { // semaphore timeout
+            return false;
+        }
+
+        return true;
+    } // MQTT_Publish
+
+
 }
 ?>
