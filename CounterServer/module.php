@@ -52,7 +52,9 @@ class CounterServer extends IPSModule
 
         $timestamp = $payload['timestamp'] ?? date('Y-m-d H:i:s');
         $counters = $payload['counters'] ?? [];
+        $projectId = $this->ReadPropertyInteger('ProjectIdPortal');
 
+        if ($projectId !== -1) {
         foreach ($counters as $c) {
 
             $counterId = $c['id'] ?? '';
@@ -62,9 +64,7 @@ class CounterServer extends IPSModule
             $type = $c['type'] ?? 'other';
             $unit = $c['unit'] ?? 'kWh';
 
-            $projectId = $this->ReadPropertyInteger('ProjectIdPortal');
 
-            if ($projectId !== -1) {
             // ---------- UPSERT ----------
             $sql = "
                 INSERT INTO meter_devices
@@ -72,7 +72,7 @@ class CounterServer extends IPSModule
                 VALUES
                 (
                     " .  $this->esc($projectId) . "',
-                    '" . $this->esc($clientId . '_' . $counterId) . "',
+                    '" . $this->esc(base64_encode($projectId.$clientId . '_' . $counterId)) . "',
                     '" . $this->esc($counterId) . "',
                     '" . $this->esc($clientId) . "',
                     '" . $this->esc($clientName) . "',
@@ -89,13 +89,12 @@ class CounterServer extends IPSModule
 
                 
             MySQL_ExecuteSimple($sqlId, $sql);
-            }
+            
 
             // ---------- GET meter_id ----------
             $sqlGet = "
                 SELECT id FROM meter_devices
-                WHERE client_id = '" . $this->esc($clientId) . "'
-                AND counter_id = '" . $this->esc($counterId) . "'
+                WHERE meter_uuid = '" . $this->esc(base64_encode($projectId.$clientId . '_' . $counterId)) . "'
                 LIMIT 1
             ";
 
@@ -140,6 +139,9 @@ class CounterServer extends IPSModule
             ";
 
             MySQL_ExecuteSimple($sqlId, $sqlInsert);
+        }
+        } else {
+            IPS_LogMessage('CounterTable', 'Keine Project-ID für Portal angegeben.');
         }
     }
 
