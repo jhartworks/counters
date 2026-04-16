@@ -13,7 +13,7 @@
             "validVariableTypes": [3]
         },
         {
-            "type": "Text",
+            "type": "ValidationTextBox",
             "name": "Projectname",
             "caption": "Projekt-Name"
         },
